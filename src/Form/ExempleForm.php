@@ -56,6 +56,13 @@ class ExempleForm extends ConfigFormBase {
     return parent::buildForm($form, $form_state);
   }
 
+  /**
+   * Validation of the upload canditat files
+   *
+   * @param $file_data
+   *
+   * @return array
+   */
   public static function my_content_validator($file_data) {
     /*
      * $file_data = [
@@ -65,6 +72,16 @@ class ExempleForm extends ConfigFormBase {
      *   'file_path' => string(14)
      */
     // Deepest file validation
+
+    /*
+     * Return value = [
+     *  'status' => Boolean ( True => ok , False => error)
+     *  'message' => string ( message to user )
+     * ]
+     */
+    $status = TRUE;
+    $message = 'OK';
+    return ['status' => $status, 'message' => $message];
   }
 
   /**

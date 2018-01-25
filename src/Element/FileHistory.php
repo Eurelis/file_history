@@ -47,16 +47,16 @@ class FileHistory extends FormElement {
 
     // If there is input
     if ($input !== FALSE) {
+
       $block_upload = FALSE;
       // if isset file content validation
       if(isset($element['#content_validator']) && is_callable($element['#content_validator'], false, $validation_callback)) {
         $all_files = \Drupal::request()->files->get('files', []);
         $upload_name = implode('_', $element['#parents']);
-        if(!empty($all_files[$upload_name])) {
+        if(!empty($all_files[$upload_name]) && file_exists($all_files[$upload_name])) {
 
           /** @var UploadedFile $file_upload */
           $file_upload = $all_files[$upload_name];
-
           $file_data_for_validation = [
             'file_original_name' => $file_upload->getClientOriginalName(),
             'file_original_extension' => $file_upload->getClientOriginalExtension(),
@@ -66,8 +66,15 @@ class FileHistory extends FormElement {
 
           $return_status = $validation_callback($file_data_for_validation);
 
+          $status = 'status';
+          if($return_status['status'] === FALSE) {
+            $block_upload = TRUE;
+            $status = 'error';
+          }
+
           if(isset($return_status['message']) && $return_status['message'] != '') {
-            drupal_set_message($return_status['message']);
+
+            drupal_set_message($return_status['message'], $status);
           }
           // If validation failed
           if($return_status['status'] === FALSE) {
@@ -75,6 +82,7 @@ class FileHistory extends FormElement {
           }
         }
       }
+
       if($block_upload !== TRUE) {
         // Upload File.
         if ($files = file_managed_file_save_upload($element, $form_state)) {
