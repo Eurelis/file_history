@@ -49,6 +49,3 @@ file_history.delete_file:
     parameters:
       file:
         type: entity:file
-
-
-

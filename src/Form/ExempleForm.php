@@ -43,27 +43,29 @@ class ExempleForm extends ConfigFormBase {
       '#description' => $this->t('List of files'),
       '#default_value' => $config->get('configurations'),
       '#size' => 50,
-      // like Managed Files, general file validation
+      // Like Managed Files, general file validation.
       '#upload_validators' => $validators,
-      // Folder to store files
+      // Folder to store files.
       '#upload_location' => 'public://my_configuration/',
-      // If you need validation content of files before store it
+      // If you need validation content of files before store it.
       '#content_validator' => [
-        $class, 'my_content_validator'
-      ]
+        $class, 'myContentValidator',
+      ],
 
     ];
     return parent::buildForm($form, $form_state);
   }
 
   /**
-   * Validation of the upload canditat files
+   * Validation of the upload canditat files.
    *
-   * @param $file_data
+   * @param array $file_data
+   *   Data of uploaded file.
    *
    * @return array
+   *   Validation status.
    */
-  public static function my_content_validator($file_data) {
+  public static function myContentValidator(array $file_data = []) {
     /*
      * $file_data = [
      *   'file_original_name' => string
@@ -71,8 +73,7 @@ class ExempleForm extends ConfigFormBase {
      *   'file_size' => integer
      *   'file_path' => string(14)
      */
-    // Deepest file validation
-
+    // Deepest file validation.
     /*
      * Return value = [
      *  'status' => Boolean ( True => ok , False => error)
@@ -100,7 +101,7 @@ class ExempleForm extends ConfigFormBase {
      *
      */
 
-    // Do something on submit
+    // Do something on submit.
     $this->config('exemple_file_history.default')
       ->set('selected_configuration_file', $selected_file_value['selected_file'])
       ->save();

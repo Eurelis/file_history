@@ -8,15 +8,15 @@
 use Drupal\Core\Form\FormStateInterface;
 
 /**
- * Implement hook_theme().
+ * Implements hook_theme().
  */
 function file_history_theme($existing, $type, $theme, $path) {
 
-  $variables = array(
+  $variables = [
     'file_history' => [
       'render element' => 'element',
     ],
-  );
+  ];
 
   return $variables;
 }
@@ -25,8 +25,8 @@ function file_history_theme($existing, $type, $theme, $path) {
  * Form submission handler for upload action on file_history elements.
  */
 function file_history_file_submit($form, FormStateInterface $form_state) {
-  // No action is needed here for the upload button, because all file uploads on
-  // the form are processed by \Drupal\file_history\Element\FileHistory::valueCallback()
-  // regardless of which button was clicked.
+  // No action is needed here for the upload button,
+  // because file upload on the form are processed by
+  // \Drupal\file_history\Element\FileHistory::valueCallback().
   $form_state->setRebuild();
 }

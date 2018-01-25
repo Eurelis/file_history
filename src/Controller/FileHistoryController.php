@@ -5,7 +5,7 @@ namespace Drupal\file_history\Controller;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\file\FileInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
-use \Drupal\Core\Url;
+use Drupal\Core\Url;
 
 /**
  * Class RememberFilesController.
@@ -13,17 +13,21 @@ use \Drupal\Core\Url;
 class FileHistoryController extends ControllerBase {
 
   /**
-   * Set File for Use
+   * Set File for Use.
    *
    * @param \Drupal\file\FileInterface $file
-   * @param $config_name
-   * @param $destination
+   *   File object.
+   * @param string $config_name
+   *   Config Id to load.
+   * @param string $destination
+   *   Destination of return.
    *
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
+   *   Redirection.
    */
   public function useFile(FileInterface $file, $config_name, $destination) {
 
-    //Set file as active
+    // Set file as active.
     $config = \Drupal::service('config.factory')->getEditable('remember_files.' . $config_name);
     $config->set('activ_file', $file->id())->save();
 
@@ -31,12 +35,16 @@ class FileHistoryController extends ControllerBase {
   }
 
   /**
-   * Delete File
+   * Delete File.
    *
    * @param \Drupal\file\FileInterface $file
-   * @param $destination
+   *   File object.
+   * @param string $destination
+   *   Destination of return.
    *
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
+   *   Redirection.
+   *
    * @throws \Drupal\Core\Entity\EntityStorageException
    */
   public function deleteFile(FileInterface $file, $destination) {
@@ -45,34 +53,39 @@ class FileHistoryController extends ControllerBase {
   }
 
   /**
-   * @TODO : make somthing
-   * Relaod File
+   * Relaod File.
    *
    * @param \Drupal\file\FileInterface $file
-   * @param $config_name
-   * @param $destination
+   *   File object.
+   * @param string $config_name
+   *   Config Id to load.
+   * @param string $destination
+   *   Destination of return.
    *
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
+   *   Redirection.
    */
   public function reloadFile(FileInterface $file, $config_name, $destination) {
 
-    //Set file as active
+    // Set file as active.
     $config = \Drupal::service('config.factory')->getEditable('remember_files.' . $config_name);
     $config->set('activ_file', $file->id())->save();
 
     return $this->returnToPage($destination);
   }
 
-
   /**
-   * Return to parent page
+   * Return to parent page.
    *
-   * @param $destination
+   * @param string $destination
+   *   Destination of return.
    *
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
+   *   Redirection.
    */
   private function returnToPage($destination) {
     $url = Url::fromRoute($destination)->toString();
     return new RedirectResponse($url);
   }
+
 }
