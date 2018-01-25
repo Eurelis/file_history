@@ -1,0 +1,54 @@
+# Route to exemple form
+file_history.exemple_form:
+  path: '/admin/file_history/exemple_form'
+  defaults:
+    _form: '\Drupal\file_history\Form\ExempleForm'
+    _title: 'ExempleForm'
+  requirements:
+    _permission: 'access administration pages'
+  options:
+    _admin_route: TRUE
+
+
+# Route to using a file
+file_history.use_file:
+  path: '/file_history/use/{file}/{config_name}/{destination}'
+  defaults:
+    _controller: '\Drupal\file_history\Controller\FileHistoryController::useFile'
+    _title: 'use'
+  requirements:
+    _permission: 'access content'
+    file: '^[0-9_]+'
+  options:
+    parameters:
+      file:
+        type: entity:file
+# Route to reload a file
+file_history.reload_file:
+  path: '/file_history/reload/{file}/{config_name}/{destination}'
+  defaults:
+    _controller: '\Drupal\file_history\Controller\FileHistoryController::reloadFile'
+    _title: 'use'
+  requirements:
+    _permission: 'access content'
+    file: '^[0-9_]+'
+  options:
+    parameters:
+      file:
+        type: entity:file
+# Route to delete a file
+file_history.delete_file:
+  path: '/file_history/delete/{file}/{destination}'
+  defaults:
+    _controller: '\Drupal\file_history\Controller\FileHistoryController::deleteFile'
+    _title: 'delete'
+  requirements:
+    _permission: 'access content'
+    file: '^[0-9_]+'
+  options:
+    parameters:
+      file:
+        type: entity:file
+
+
+
