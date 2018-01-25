@@ -5,15 +5,13 @@ namespace Drupal\file_history\Element;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\FormElement;
 use Drupal\Core\Url;
-use Drupal\file\Element\ManagedFile;
-use Drupal\file\Entity\File;
-
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 /**
- * Provides an AJAX/progress aware widget for uploading and saving a file.
+ * Provides an widget with memory of uploaded file.
  *
  * @FormElement("file_history")
  */
-class FileHistory extends ManagedFile {
+class FileHistory extends FormElement {
 
   /**
    * {@inheritdoc}
@@ -24,9 +22,6 @@ class FileHistory extends ManagedFile {
       '#input' => TRUE,
       '#process' => [
         [$class, 'processFileHistory'],
-      ],
-      '#element_validate' => [
-        [$class, 'validateFileHistory'],
       ],
       '#theme' => 'file_history',
       '#theme_wrappers' => ['form_element'],
@@ -50,31 +45,52 @@ class FileHistory extends ManagedFile {
    */
   public static function valueCallback(&$element, $input, FormStateInterface $form_state) {
 
-    // If user need validation content of file
-    if(isset($element['#content_validator']) && is_callable($element['#content_validator'], false, $validation_callback)) {
+    // If there is input
+    if ($input !== FALSE) {
+      $block_upload = FALSE;
+      // if isset file content validation
+      if(isset($element['#content_validator']) && is_callable($element['#content_validator'], false, $validation_callback)) {
+        $all_files = \Drupal::request()->files->get('files', []);
+        $upload_name = implode('_', $element['#parents']);
+        if(!empty($all_files[$upload_name])) {
 
-      $all_files = \Drupal::request()->files->get('files', []);
-      $upload_name = implode('_', $element['#parents']);
-      if(!empty($all_files[$upload_name])) {
+          /** @var UploadedFile $file_upload */
+          $file_upload = $all_files[$upload_name];
 
-        $file_upload = $all_files[$upload_name];
+          $file_data_for_validation = [
+            'file_original_name' => $file_upload->getClientOriginalName(),
+            'file_original_extension' => $file_upload->getClientOriginalExtension(),
+            'file_size' => $file_upload->getClientSize(),
+            'file_path' => $file_upload->getRealPath(),
+          ];
 
-        $return_status = $validation_callback($file_upload);
+          $return_status = $validation_callback($file_data_for_validation);
 
-        if(isset($return_status['message']) && $return_status['message'] != '') {
-          drupal_set_message($return_status['message']);
+          if(isset($return_status['message']) && $return_status['message'] != '') {
+            drupal_set_message($return_status['message']);
+          }
+          // If validation failed
+          if($return_status['status'] === FALSE) {
+            $block_upload = TRUE;
+          }
         }
-        // If validation failed
-        if($return_status['status'] === FALSE) {
-          return;
+      }
+      if($block_upload !== TRUE) {
+        // Upload File.
+        if ($files = file_managed_file_save_upload($element, $form_state)) {
+          // Set file as permanent
+          /** @var \Drupal\file\Entity\File $file */
+          foreach($files as $file) {
+            if($file != NULL && $file->isTemporary()) {
+              $file->setPermanent();
+              $file->save();
+            }
+          }
         }
-
       }
     }
 
-    // Call ManagedFile valueCallback
-    parent::valueCallback($element, $input, $form_state);
-
+    // Return default selected value
     $config_name = 'remember_files.' . $element['#name'];
     $config = \Drupal::config($config_name);
     $fid = $config->get('activ_file');
@@ -89,17 +105,42 @@ class FileHistory extends ManagedFile {
    */
   public static function processFileHistory(&$element, FormStateInterface $form_state, &$complete_form) {
 
-    // Call ManagedFile Process Callback
-    parent::processManagedFile($element, $form_state, $complete_form);
+    // Prepare upload fields
 
-    // Clean not used elements
-    if($element['#files'] != FALSE) {
-      foreach($element['#files'] as $delta => $file)  {
-        unset($element['file_' . $delta]);
-      }
+    // This is used sometimes so let's implode it just once.
+    $parents_prefix = implode('_', $element['#parents']);
+    $element['#tree'] = TRUE;
+
+    // Add Upload field
+    $element['upload'] = [
+      '#name' => 'files[' . $parents_prefix . ']',
+      '#type' => 'file',
+      '#title' => t('Choose a file'),
+      '#title_display' => 'invisible',
+      '#size' => $element['#size'],
+      '#multiple' => $element['#multiple'],
+      '#theme_wrappers' => [],
+      '#weight' => -10,
+      '#error_no_message' => TRUE,
+    ];
+
+    // Add upload button
+    $element['upload_button'] = [
+      '#name' => $parents_prefix . '_upload_button',
+      '#type' => 'submit',
+      '#value' => t('Upload'),
+      '#validate' => [],
+      '#submit' => ['file_history_file_submit'],
+      '#limit_validation_errors' => [],
+      '#weight' => -5,
+    ];
+
+    // Add the extension list to the page as JavaScript settings.
+    if (isset($element['#upload_validators']['file_validate_extensions'][0])) {
+      $extension_list = implode(',', array_filter(explode(' ', $element['#upload_validators']['file_validate_extensions'][0])));
+      $element['upload']['#attached']['drupalSettings']['file']['elements']['#' . $element['#id']] = $extension_list;
     }
-    unset($element['remove_button']);
-    unset($element['fids']);
+
 
     // Get config for Current File
     $config_name = 'remember_files.' . $element['#name'];
@@ -111,7 +152,7 @@ class FileHistory extends ManagedFile {
       ['data' => t('Filename')],
       ['data' => t('Uploaded at')],
       ['data' => t('Is active file ?')],
-      ['data' => t('Operations')]
+      ['data' => t('Operations')],
     ];
 
     $rows = [];
@@ -141,24 +182,33 @@ class FileHistory extends ManagedFile {
 
       $current_route = \Drupal::routeMatch()->getRouteName();
 
+      if($isCurrentFile === TRUE) {
+        $link_title = t('Reload');
+        $route_target = 'use_file';
+      }
+      else {
+        $link_title = t('Use');
+        $route_target = 'reload_file';
+      }
+
       $links = [];
       $links[] = [
-        'title' => $isCurrentFile ? t('Reload') : t('Use'),
-        'url' => Url::fromRoute('remember_files.use_file', ['file' => $fid, 'config_name' => $element['#name'], 'destination' => $current_route])
+        'title' => $link_title ,
+        'url' => Url::fromRoute('file_history.'.$route_target, ['file' => $fid, 'config_name' => $element['#name'], 'destination' => $current_route]),
       ];
 
       if (!$isCurrentFile) {
         $links[] = [
           'title' => t('Delete'),
-          'url' => Url::fromRoute('remember_files.delete_file', ['file' => $fid, 'destination' => $current_route])
+          'url' => Url::fromRoute('file_history.delete_file', ['file' => $fid, 'destination' => $current_route]),
         ];
       }
 
       $fileRow[] = ['data' =>
         [
           '#type' => 'dropbutton',
-          '#links' => $links
-        ]
+          '#links' => $links,
+        ],
       ];
       $rows[$fObj->getCreatedTime()] = $fileRow;
     }
@@ -169,7 +219,7 @@ class FileHistory extends ManagedFile {
     $element['table'] = [
       '#theme' => 'table',
       '#header' => $header,
-      '#rows' => array_values($rows)
+      '#rows' => array_values($rows),
     ];
 
     return $element;
@@ -189,42 +239,5 @@ class FileHistory extends ManagedFile {
       return $fileArray[0];
     }
     return NULL;
-  }
-
-  /**
-   * Instead of lack of element_submit, we use validate to make permanant loaded files
-   *
-   * @param $element
-   * @param \Drupal\Core\Form\FormStateInterface $form_state
-   * @param $complete_form
-   *
-   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
-   * @throws \Drupal\Core\Entity\EntityStorageException
-   */
-  public static function validateFileHistory(&$element, FormStateInterface $form_state, &$complete_form) {
-    // Check required property based on the FID.
-
-    if ($element['#required']) {
-      $config_name = 'remember_files.' . $element['#name'];
-      $config = \Drupal::config($config_name);
-      $currentFile = $config->get('activ_file');
-/*
-      if($currentFile == '') {
-        // Field need a file are choosed
-        $form_state->setError($element, t('Upload and/or choose en file for @name field.', ['@name' => $element['#title']]));
-      }*/
-    }
-
-    // If no validation error on this element, we save files
-    $files = file_scan_directory($element['#upload_location'], '/.*\.xlsx$/');
-    foreach($files as $file) {
-      $fObj = self::getFileFromUri($file->uri);
-      if($fObj != NULL && $fObj->isTemporary()) {
-        $fObj->setPermanent();
-        $fObj->save();
-      }
-    }
-
-
   }
 }

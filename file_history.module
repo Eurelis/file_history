@@ -5,34 +5,28 @@
  * Contains remember_files.module.
  */
 
-use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Form\FormStateInterface;
 
 /**
- * Implements hook_help().
+ * Implement hook_theme().
  */
-function remember_files_help($route_name, RouteMatchInterface $route_match) {
-  switch ($route_name) {
-    // Main module help for the remember_files module.
-    case 'help.page.remember_files':
-      $output = '';
-      $output .= '<h3>' . t('About') . '</h3>';
-      $output .= '<p>' . t('My Awesome Module') . '</p>';
-      return $output;
-
-    default:
-  }
-}
-
 function file_history_theme($existing, $type, $theme, $path) {
 
   $variables = array(
-
     'file_history' => [
       'render element' => 'element',
     ],
-
   );
 
   return $variables;
 }
 
+/**
+ * Form submission handler for upload action on file_history elements.
+ */
+function file_history_file_submit($form, FormStateInterface $form_state) {
+  // No action is needed here for the upload button, because all file uploads on
+  // the form are processed by \Drupal\file_history\Element\FileHistory::valueCallback()
+  // regardless of which button was clicked.
+  $form_state->setRebuild();
+}
