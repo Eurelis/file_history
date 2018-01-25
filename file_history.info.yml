@@ -1,6 +1,6 @@
 name: file_history
 type: module
-description: Extension to managed files module
+description: A upload/selector file form_API field_type to manage history of a configuration file
 core: 8.x
 package: Form_API
 dependencies:

@@ -1,6 +1,6 @@
 {
     "name": "eurelis/file_history",
-    "description": "Extended Managed_file form_api field_type which maintained last upladed files",
+    "description": "A upload/selector file form_API field_type to manage history of a configuration file",
     "type": "drupal-module",
     "authors": [
         {
