@@ -45,6 +45,26 @@ class FileHistoryController extends ControllerBase {
   }
 
   /**
+   * @TODO : make somthing
+   * Relaod File
+   *
+   * @param \Drupal\file\FileInterface $file
+   * @param $config_name
+   * @param $destination
+   *
+   * @return \Symfony\Component\HttpFoundation\RedirectResponse
+   */
+  public function reloadFile(FileInterface $file, $config_name, $destination) {
+
+    //Set file as active
+    $config = \Drupal::service('config.factory')->getEditable('remember_files.' . $config_name);
+    $config->set('activ_file', $file->id())->save();
+
+    return $this->returnToPage($destination);
+  }
+
+
+  /**
    * Return to parent page
    *
    * @param $destination
@@ -55,5 +75,4 @@ class FileHistoryController extends ControllerBase {
     $url = Url::fromRoute($destination)->toString();
     return new RedirectResponse($url);
   }
-
 }
