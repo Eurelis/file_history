@@ -1,0 +1,7 @@
+name: file_history
+type: module
+description: Extension to managed files module
+core: 8.x
+package: Form_API
+dependencies:
+  - file

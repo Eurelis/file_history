@@ -1,0 +1,38 @@
+<?php
+
+/**
+ * @file
+ * Contains remember_files.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_help().
+ */
+function remember_files_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the remember_files module.
+    case 'help.page.remember_files':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('My Awesome Module') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+function file_history_theme($existing, $type, $theme, $path) {
+
+  $variables = array(
+
+    'file_history' => [
+      'render element' => 'element',
+    ],
+
+  );
+
+  return $variables;
+}
+

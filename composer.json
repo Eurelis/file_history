@@ -1,0 +1,17 @@
+{
+    "name": "eurelis/file_history",
+    "description": "Extended Managed_file form_api field_type which maintained last upladed files",
+    "type": "drupal-module",
+    "authors": [
+        {
+            "name": "Eurelis",
+            "email": "d.robert@eurelis.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {},
+    "homepage": "https://github.com/Eurelis/file_history",
+    "support": {
+        "issues": "https://github.com/Eurelis/file_history/issues"
+    }
+}
