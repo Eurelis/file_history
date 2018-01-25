@@ -30,10 +30,9 @@ class ExempleForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-    $config = $this->config('file_history.default');
     $class = get_class($this);
     $validators = [
-      'file_validate_extensions' => ['xls xlsx'],
+      'file_validate_extensions' => ['xls xlsx xml txt'],
       'file_validate_size' => [file_upload_max_size()],
     ];
 
@@ -41,7 +40,6 @@ class ExempleForm extends ConfigFormBase {
       '#type' => 'file_history',
       '#title' => $this->t('Configurations'),
       '#description' => $this->t('List of files'),
-      '#default_value' => $config->get('configurations'),
       '#size' => 50,
       // Like Managed Files, general file validation.
       '#upload_validators' => $validators,
@@ -71,7 +69,7 @@ class ExempleForm extends ConfigFormBase {
      *   'file_original_name' => string
      *   'file_original_extension' => string
      *   'file_size' => integer
-     *   'file_path' => string(14)
+     *   'file_path' => string(14) ( like /tmp/XXXX )
      */
     // Deepest file validation.
     /*

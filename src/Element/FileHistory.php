@@ -43,6 +43,11 @@ class FileHistory extends FormElement {
    * {@inheritdoc}
    */
   public static function valueCallback(&$element, $input, FormStateInterface $form_state) {
+    // If no upload_location, no field.
+    if ($element['#upload_location'] == NULL) {
+      drupal_set_message("'#upload_location' attribute are mandatory in file_history definition.", 'error');
+      return;
+    }
 
     // If there is input.
     if ($input !== FALSE) {
@@ -65,6 +70,11 @@ class FileHistory extends FormElement {
 
           $return_status = $validation_callback($file_data_for_validation);
 
+          if (!isset($return_status['status'])) {
+            drupal_set_message("Validation callback need return at least a status 'return ['status' => Boolean]'", 'error');
+            return;
+          }
+
           $status = 'status';
           if ($return_status['status'] === FALSE) {
             $block_upload = TRUE;
@@ -72,9 +82,9 @@ class FileHistory extends FormElement {
           }
 
           if (isset($return_status['message']) && $return_status['message'] != '') {
-
             drupal_set_message($return_status['message'], $status);
           }
+
           // If validation failed.
           if ($return_status['status'] === FALSE) {
             $block_upload = TRUE;
@@ -111,7 +121,10 @@ class FileHistory extends FormElement {
    * support for a default value.
    */
   public static function processFileHistory(&$element, FormStateInterface $form_state, &$complete_form) {
-
+    // If no upload_location, no field.
+    if ($element['#upload_location'] == NULL) {
+      return;
+    }
     // Prepare upload fields.
     // This is used sometimes so let's implode it just once.
     $parents_prefix = implode('_', $element['#parents']);
@@ -141,10 +154,13 @@ class FileHistory extends FormElement {
       '#weight' => -5,
     ];
 
+    $file_extension_mask = '/./';
     // Add the extension list to the page as JavaScript settings.
     if (isset($element['#upload_validators']['file_validate_extensions'][0])) {
       $extension_list = implode(',', array_filter(explode(' ', $element['#upload_validators']['file_validate_extensions'][0])));
       $element['upload']['#attached']['drupalSettings']['file']['elements']['#' . $element['#id']] = $extension_list;
+
+      $file_extension_mask = '/.*\.' . str_replace(' ', '|', $element['#upload_validators']['file_validate_extensions'][0]) . '/';
     }
 
     // Get config for Current File.
@@ -162,12 +178,12 @@ class FileHistory extends FormElement {
 
     $rows = [];
 
-    $files = file_scan_directory($element['#upload_location'], '/.*\.xlsx$/');
-
+    // List only files with correct extensions.
+    $already_load_files = file_scan_directory($element['#upload_location'], $file_extension_mask);
     $currentFile = $config->get('activ_file');
 
     // For Each files.
-    foreach ($files as $file) {
+    foreach ($already_load_files as $file) {
 
       $fObj = self::getFileFromUri($file->uri);
 
