@@ -49,7 +49,8 @@ class ExempleForm extends ConfigFormBase {
       '#content_validator' => [
         $class, 'myContentValidator',
       ],
-
+      // If folder contain file not knowed by Drupal, we save they.
+      '#create_missing' => TRUE,
     ];
     return parent::buildForm($form, $form_state);
   }

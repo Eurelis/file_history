@@ -5,6 +5,7 @@ namespace Drupal\file_history\Element;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element\FormElement;
 use Drupal\Core\Url;
+use Drupal\file\Entity\File;
 
 /**
  * Provides an widget with memory of uploaded file.
@@ -35,6 +36,8 @@ class FileHistory extends FormElement {
         'library' => ['file/drupal.file'],
       ],
       '#accept' => NULL,
+      '#content_validator' => [],
+      '#create_missing' => FALSE,
     ];
   }
 
@@ -53,7 +56,7 @@ class FileHistory extends FormElement {
 
       $block_upload = FALSE;
       // If isset file content validation.
-      if (isset($element['#content_validator']) && is_callable($element['#content_validator'], FALSE, $validation_callback)) {
+      if (is_callable($element['#content_validator'], FALSE, $validation_callback)) {
         $all_files = \Drupal::request()->files->get('files', []);
         $upload_name = implode('_', $element['#parents']);
         if (!empty($all_files[$upload_name]) && file_exists($all_files[$upload_name])) {
@@ -124,6 +127,7 @@ class FileHistory extends FormElement {
     if ($element['#upload_location'] == NULL) {
       return;
     }
+
     // Prepare upload fields.
     // This is used sometimes so let's implode it just once.
     $parents_prefix = implode('_', $element['#parents']);
@@ -186,9 +190,37 @@ class FileHistory extends FormElement {
 
       $fObj = self::getFileFromUri($file->uri);
 
+      // If the file aren't know by Drupal.
       if ($fObj == NULL) {
-        continue;
+        // And field is configure as autocreate.
+        if ($element['#create_missing'] === TRUE) {
+          // We save new file.
+          $realpath = \Drupal::service('file_system')->realpath($file->uri);
+          $values = [
+            'uid' => 0,
+            'filename' => $file->filename,
+            'uri' => $file->uri,
+            'filesize' => filesize($realpath),
+            'status' => FILE_STATUS_PERMANENT,
+          ];
+          $values['filemime'] = \Drupal::service('file.mime_type.guesser')->guess($file->filename);
+          $new_file = File::create($values);
+          $new_file->save();
+          if ($new_file->id() == NULL) {
+            // If the file aren't save, pass to next.
+            continue;
+          }
+          else {
+            $fObj = $new_file;
+          }
+        }
+        else {
+          // Pass to next file.
+          continue;
+        }
       }
+
+      // Process File for Table.
       $fid = $fObj->id();
 
       $fileRow = [];

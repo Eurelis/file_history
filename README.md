@@ -35,8 +35,11 @@ $form['configurations_files'] = [
         
         // If you need validation content of files before store it.
         '#content_validator' => [
-          $class, 'myContentValidator',
+            $class, 'myContentValidator',
         ],
+        // If folder contain file not knowed by Drupal, we save they.
+        '#create_missing' => TRUE,
+    ];
 ```
 
 The ``upload_location`` item are mandatory, please choose it wisely 
@@ -51,6 +54,11 @@ This static method will call between the server loading file (go to /tmp)
 and the Drupal saving it as file ( with fid).
 The goal are to permit a specific and hard content control of data upload 
 before the file saving.
+
+The ``create_missing`` item permit to autorize the field to save in Drupal the
+files present in the folder which not exist in in Drupal.
+That can be use full if you folder received files from a another source than
+Drupal like a shell script.
 
 ## 3. Content validator
 
@@ -119,6 +127,6 @@ On the form submit action, the field value is a array with state of the two
 
 - Cleaning code originaly from managed_file
 - Add a real action to "reload" callback
-- Add a manage of files add in work folder by external source (shell script)
+- Replace link action by submit buttons & correctly manage default_value
 - Correct issues...
 - Something else ?
