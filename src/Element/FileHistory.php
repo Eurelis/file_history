@@ -23,7 +23,6 @@ class FileHistory extends FormElement {
       '#process' => [
         [$class, 'processFileHistory'],
       ],
-      '#theme' => 'file_history',
       '#theme_wrappers' => ['form_element'],
       '#progress_indicator' => 'throbber',
       '#progress_message' => NULL,
@@ -144,12 +143,12 @@ class FileHistory extends FormElement {
     ];
 
     // Add upload button.
-    $element['upload_button'] = [
+    $element[$parents_prefix . '_upload_button'] = [
       '#name' => $parents_prefix . '_upload_button',
       '#type' => 'submit',
       '#value' => t('Upload'),
       '#validate' => [],
-      '#submit' => ['file_history_file_submit'],
+      '#submit' => ['file_history_submit_upload'],
       '#limit_validation_errors' => [],
       '#weight' => -5,
     ];

@@ -24,7 +24,8 @@ function file_history_theme($existing, $type, $theme, $path) {
 /**
  * Form submission handler for upload action on file_history elements.
  */
-function file_history_file_submit($form, FormStateInterface $form_state) {
+function file_history_submit_upload($form, FormStateInterface $form_state) {
+
   // No action is needed here for the upload button,
   // because file upload on the form are processed by
   // \Drupal\file_history\Element\FileHistory::valueCallback().
