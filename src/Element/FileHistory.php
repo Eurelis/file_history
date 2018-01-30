@@ -128,6 +128,8 @@ class FileHistory extends FormElement {
       return;
     }
 
+    $create_missing = (isset($element['#create_missing']) && $element['#create_missing'] === TRUE);
+
     // Prepare upload fields.
     // This is used sometimes so let's implode it just once.
     $parents_prefix = implode('_', $element['#parents']);
@@ -193,7 +195,7 @@ class FileHistory extends FormElement {
       // If the file aren't know by Drupal.
       if ($fObj == NULL) {
         // And field is configure as autocreate.
-        if ($element['#create_missing'] === TRUE) {
+        if ($create_missing) {
           // We save new file.
           $realpath = \Drupal::service('file_system')->realpath($file->uri);
           $values = [
