@@ -28,7 +28,7 @@ class FileHistoryController extends ControllerBase {
   public function useFile(FileInterface $file, $config_name, $destination) {
 
     // Set file as active.
-    $config = \Drupal::service('config.factory')->getEditable('remember_files.' . $config_name);
+    $config = \Drupal::service('config.factory')->getEditable('file_history.' . $config_name);
     $config->set('activ_file', $file->id())->save();
 
     return $this->returnToPage($destination);
@@ -68,7 +68,7 @@ class FileHistoryController extends ControllerBase {
   public function reloadFile(FileInterface $file, $config_name, $destination) {
 
     // Set file as active.
-    $config = \Drupal::service('config.factory')->getEditable('remember_files.' . $config_name);
+    $config = \Drupal::service('config.factory')->getEditable('file_history.' . $config_name);
     $config->set('activ_file', $file->id())->save();
 
     return $this->returnToPage($destination);

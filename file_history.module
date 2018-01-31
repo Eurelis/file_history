@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Contains remember_files.module.
+ * Contains file_history.module.
  */
 
 use Drupal\Core\Form\FormStateInterface;

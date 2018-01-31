@@ -110,7 +110,7 @@ class FileHistory extends FormElement {
     }
 
     // Return default selected value.
-    $config_name = 'remember_files.' . $element['#name'];
+    $config_name = 'file_history.' . $element['#name'];
     $config = \Drupal::config($config_name);
     $fid = $config->get('activ_file');
     return ['selected_file' => $fid];
@@ -169,7 +169,7 @@ class FileHistory extends FormElement {
     }
 
     // Get config for Current File.
-    $config_name = 'remember_files.' . $element['#name'];
+    $config_name = 'file_history.' . $element['#name'];
     $config = \Drupal::config($config_name);
 
     // Add Table Header.
