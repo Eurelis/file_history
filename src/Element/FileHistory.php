@@ -55,14 +55,19 @@ class FileHistory extends FormElement {
     if ($input !== FALSE) {
 
       $block_upload = FALSE;
-      // If isset file content validation.
-      if (is_callable($element['#content_validator'], FALSE, $validation_callback)) {
-        $all_files = \Drupal::request()->files->get('files', []);
-        $upload_name = implode('_', $element['#parents']);
-        if (!empty($all_files[$upload_name]) && file_exists($all_files[$upload_name])) {
 
-          /** @var \Symfony\Component\HttpFoundation\File\UploadedFile $file_upload */
-          $file_upload = $all_files[$upload_name];
+      $all_files = \Drupal::request()->files->get('files', []);
+      $upload_name = implode('_', $element['#parents']);
+
+      // If a file are uploaded.
+      if (!empty($all_files[$upload_name]) && file_exists($all_files[$upload_name])) {
+
+        /** @var \Symfony\Component\HttpFoundation\File\UploadedFile $file_upload */
+        $file_upload = $all_files[$upload_name];
+
+        // If isset file content validation.
+        if (is_callable($element['#content_validator'], FALSE, $validation_callback)) {
+
           $file_data_for_validation = [
             'file_original_name' => $file_upload->getClientOriginalName(),
             'file_original_extension' => $file_upload->getClientOriginalExtension(),
@@ -92,17 +97,22 @@ class FileHistory extends FormElement {
             $block_upload = TRUE;
           }
         }
-      }
 
-      if ($block_upload !== TRUE) {
-        // Upload File.
-        if ($files = file_managed_file_save_upload($element, $form_state)) {
-          // Set file as permanent.
-          /** @var \Drupal\file\Entity\File $file */
-          foreach ($files as $file) {
-            if ($file != NULL && $file->isTemporary()) {
-              $file->setPermanent();
-              $file->save();
+        // If validation pass, we save file.
+        if ($block_upload !== TRUE) {
+          $destination = isset($element['#upload_location']) ? $element['#upload_location'] : NULL;
+          if (!$files = file_save_upload($upload_name, $element['#upload_validators'], $destination)) {
+            \Drupal::logger('file')->notice('The file upload failed. %upload', ['%upload' => $upload_name]);
+            $form_state->setError($element, t('Files in the @name field were unable to be uploaded.', ['@name' => $element['#title']]));
+          }
+          else {
+            // Set file as permanent.
+            /** @var \Drupal\file\Entity\File $file */
+            foreach ($files as $file) {
+              if ($file != NULL && $file->isTemporary()) {
+                $file->setPermanent();
+                $file->save();
+              }
             }
           }
         }
