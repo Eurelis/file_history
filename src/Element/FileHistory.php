@@ -38,6 +38,9 @@ class FileHistory extends FormElement {
       '#accept' => NULL,
       '#content_validator' => [],
       '#create_missing' => FALSE,
+      '#no_update' => FALSE,
+      '#no_use' => FALSE,
+      '#no_download' => FALSE,
     ];
   }
 
@@ -138,6 +141,9 @@ class FileHistory extends FormElement {
       return;
     }
 
+    $no_update = (isset($element['#no_update']) && $element['#no_update'] === TRUE);
+    $no_download = (isset($element['#no_download']) && $element['#no_download'] === TRUE);
+    $no_use = (isset($element['#no_use']) && $element['#no_use'] === TRUE);
     $create_missing = (isset($element['#create_missing']) && $element['#create_missing'] === TRUE);
 
     // Prepare upload fields.
@@ -145,37 +151,39 @@ class FileHistory extends FormElement {
     $parents_prefix = implode('_', $element['#parents']);
     $element['#tree'] = TRUE;
 
-    // Add Upload field.
-    $element['upload'] = [
-      '#name' => 'files[' . $parents_prefix . ']',
-      '#type' => 'file',
-      '#title' => t('Choose a file'),
-      '#title_display' => 'invisible',
-      '#size' => $element['#size'],
-      '#multiple' => $element['#multiple'],
-      '#theme_wrappers' => [],
-      '#weight' => -10,
-      '#error_no_message' => TRUE,
-    ];
-
-    // Add upload button.
-    $element[$parents_prefix . '_upload_button'] = [
-      '#name' => $parents_prefix . '_upload_button',
-      '#type' => 'submit',
-      '#value' => t('Upload'),
-      '#validate' => [],
-      '#submit' => ['file_history_submit_upload'],
-      '#limit_validation_errors' => [],
-      '#weight' => -5,
-    ];
-
     $file_extension_mask = '/./';
+    $extension_list = '';
     // Add the extension list to the page as JavaScript settings.
     if (isset($element['#upload_validators']['file_validate_extensions'][0])) {
       $extension_list = implode(',', array_filter(explode(' ', $element['#upload_validators']['file_validate_extensions'][0])));
-      $element['upload']['#attached']['drupalSettings']['file']['elements']['#' . $element['#id']] = $extension_list;
-
       $file_extension_mask = '/.*\.' . str_replace(' ', '|', $element['#upload_validators']['file_validate_extensions'][0]) . '/';
+    }
+
+    if ($no_update != FALSE) {
+      // Add Upload field.
+      $element['upload'] = [
+        '#name' => 'files[' . $parents_prefix . ']',
+        '#type' => 'file',
+        '#title' => t('Choose a file'),
+        '#title_display' => 'invisible',
+        '#size' => $element['#size'],
+        '#multiple' => $element['#multiple'],
+        '#theme_wrappers' => [],
+        '#weight' => -10,
+        '#error_no_message' => TRUE,
+        '#attached' => ['drupalSettings' => ['file' => ['elements' => ['#' . $element['#id'] => $extension_list]]]],
+      ];
+
+      // Add upload button.
+      $element[$parents_prefix . '_upload_button'] = [
+        '#name' => $parents_prefix . '_upload_button',
+        '#type' => 'submit',
+        '#value' => t('Upload'),
+        '#validate' => [],
+        '#submit' => ['file_history_submit_upload'],
+        '#limit_validation_errors' => [],
+        '#weight' => -5,
+      ];
     }
 
     // Get config for Current File.
@@ -245,26 +253,27 @@ class FileHistory extends FormElement {
       $fileRow[] = ['data' => $isCurrentFile ? t('Yes') : ''];
 
       $current_route = \Drupal::routeMatch()->getRouteName();
-
-      if ($isCurrentFile === TRUE) {
-        $link_title = t('Reload');
-        $route_target = 'use_file';
-      }
-      else {
-        $link_title = t('Use');
-        $route_target = 'reload_file';
-      }
-
       $links = [];
-      $links[] = [
-        'title' => $link_title ,
-        'url' => Url::fromRoute('file_history.' . $route_target,
-          [
-            'file' => $fid,
-            'config_name' => $element['#name'],
-            'destination' => $current_route,
-          ]),
-      ];
+
+      if ($no_use !== FALSE) {
+        if ($isCurrentFile === TRUE) {
+          $link_title = t('Reload');
+          $route_target = 'use_file';
+        }
+        else {
+          $link_title = t('Use');
+          $route_target = 'reload_file';
+        }
+        $links[] = [
+          'title' => $link_title ,
+          'url' => Url::fromRoute('file_history.' . $route_target,
+            [
+              'file' => $fid,
+              'config_name' => $element['#name'],
+              'destination' => $current_route,
+            ]),
+        ];
+      }
 
       if (!$isCurrentFile) {
         $links[] = [
@@ -274,6 +283,16 @@ class FileHistory extends FormElement {
               'file' => $fid,
               'destination' => $current_route,
             ]),
+        ];
+      }
+
+      if (!$no_download) {
+        $path = $fObj->getFileUri();
+        $filepath = file_create_url($path);
+        $doclink = Url::fromUri($filepath);
+        $links[] = [
+          'title' => t('Download'),
+          'url' => $doclink,
         ];
       }
 
