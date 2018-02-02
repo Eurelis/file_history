@@ -38,7 +38,7 @@ class FileHistory extends FormElement {
       '#accept' => NULL,
       '#content_validator' => [],
       '#create_missing' => FALSE,
-      '#no_update' => FALSE,
+      '#no_upload' => FALSE,
       '#no_use' => FALSE,
       '#no_download' => FALSE,
     ];
@@ -141,7 +141,7 @@ class FileHistory extends FormElement {
       return;
     }
 
-    $no_update = (isset($element['#no_update']) && $element['#no_update'] === TRUE);
+    $no_upload = (isset($element['#no_upload']) && $element['#no_upload'] === TRUE);
     $no_download = (isset($element['#no_download']) && $element['#no_download'] === TRUE);
     $no_use = (isset($element['#no_use']) && $element['#no_use'] === TRUE);
     $create_missing = (isset($element['#create_missing']) && $element['#create_missing'] === TRUE);
@@ -159,7 +159,7 @@ class FileHistory extends FormElement {
       $file_extension_mask = '/.*\.' . str_replace(' ', '|', $element['#upload_validators']['file_validate_extensions'][0]) . '/';
     }
 
-    if ($no_update != FALSE) {
+    if (!$no_upload) {
       // Add Upload field.
       $element['upload'] = [
         '#name' => 'files[' . $parents_prefix . ']',
@@ -255,7 +255,7 @@ class FileHistory extends FormElement {
       $current_route = \Drupal::routeMatch()->getRouteName();
       $links = [];
 
-      if ($no_use !== FALSE) {
+      if (!$no_use) {
         if ($isCurrentFile === TRUE) {
           $link_title = t('Reload');
           $route_target = 'use_file';
