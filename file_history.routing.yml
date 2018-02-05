@@ -49,3 +49,16 @@ file_history.delete_file:
     parameters:
       file:
         type: entity:file
+# Route to download a file
+file_history.download_nonpublic_file:
+  path: '/file_history/download/{file}'
+  defaults:
+    _controller: '\Drupal\file_history\Controller\FileHistoryController::downloadLogFile'
+    _title: 'download'
+  requirements:
+    _permission: 'access content'
+    file: '^[0-9_]+'
+  options:
+    parameters:
+      file:
+        type: entity:file

@@ -5,6 +5,8 @@ namespace Drupal\file_history\Controller;
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\file\FileInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Drupal\Core\Url;
 
 /**
@@ -50,6 +52,29 @@ class FileHistoryController extends ControllerBase {
   public function deleteFile(FileInterface $file, $destination) {
     $file->delete();
     return $this->returnToPage($destination);
+  }
+
+  /**
+   * @param \Drupal\file\FileInterface $file
+   *   File object.
+   *
+   * @return \Symfony\Component\HttpFoundation\Response
+   *   File content
+   */
+  public function downloadLogFile(FileInterface $file) {
+
+    $real_path = \Drupal::service('file_system')->realpath($file->getFileUri());
+    $fileContent =  file_get_contents($real_path);
+
+    $response = new Response($fileContent);
+
+    $disposition = $response->headers->makeDisposition(
+      ResponseHeaderBag::DISPOSITION_ATTACHMENT, $file->getFilename()
+    );
+
+    $response->headers->set('Content-Disposition', $disposition);
+
+    return $response;
   }
 
   /**
