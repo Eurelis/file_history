@@ -287,10 +287,10 @@ class FileHistory extends FormElement {
       }
 
       if (!$no_download) {
-        $url = self::makeDownloadLink($fObj, $current_route);
+        $url = self::makeDownloadLink($fObj);
         $links[] = [
           'title' => t('Download'),
-          'url' => $url
+          'url' => $url,
         ];
       }
 
@@ -337,23 +337,27 @@ class FileHistory extends FormElement {
   }
 
   /**
-   * @param File $file
+   * Generate Download URL.
+   *
+   * @param \Drupal\file\Entity\File $file
+   *   File object.
    *
    * @return \Drupal\Core\Url
+   *   Url object
    */
-  public static function makeDownloadLink(File $file, $current) {
+  public static function makeDownloadLink(File $file) {
     $path = $file->getFileUri();
 
     $scheme = \Drupal::service('file_system')->uriScheme($path);
 
-    if($scheme == 'public') {
+    if ($scheme == 'public') {
       $filepath = file_create_url($path);
       return Url::fromUri($filepath);
     }
     else {
       return Url::fromRoute('file_history.download_nonpublic_file',
         [
-          'file' => $file->id()
+          'file' => $file->id(),
         ]);
     }
   }

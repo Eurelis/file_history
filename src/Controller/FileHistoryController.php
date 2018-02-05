@@ -55,6 +55,8 @@ class FileHistoryController extends ControllerBase {
   }
 
   /**
+   * Download non public files.
+   *
    * @param \Drupal\file\FileInterface $file
    *   File object.
    *
@@ -64,7 +66,7 @@ class FileHistoryController extends ControllerBase {
   public function downloadLogFile(FileInterface $file) {
 
     $real_path = \Drupal::service('file_system')->realpath($file->getFileUri());
-    $fileContent =  file_get_contents($real_path);
+    $fileContent = file_get_contents($real_path);
 
     $response = new Response($fileContent);
 
