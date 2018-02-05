@@ -39,6 +39,13 @@ $form['configurations_files'] = [
         ],
         // If folder contain file not knowed by Drupal, we save they.
         '#create_missing' => TRUE,
+        // TRUE if you want desactivate upload fields
+        '#no_upload' => FALSE,
+        // TRUE if you want desactivate "use" action
+        '#no_use' => FALSE,
+        // TRUE if you want desactivate "download file" action
+        '#no_download' => TRUE,
+        
     ];
 ```
 
@@ -59,6 +66,12 @@ The ``create_missing`` item permit to autorize the field to save in Drupal the
 files present in the folder which not exist in in Drupal.
 That can be use full if you folder received files from a another source than
 Drupal like a shell script.
+
+The ``no_upload``, ``no_use`` items in one hand and ``create_missing`` items in
+the other hand permit you to create a list of non-drupal generated files
+(like operation log). You can manage donwload, delete there files, 
+maintaining a little history of the operations
+
 
 ## 3. Content validator
 

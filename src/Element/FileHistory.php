@@ -194,6 +194,7 @@ class FileHistory extends FormElement {
     $header = [
       ['data' => t('Name')],
       ['data' => t('Filename')],
+      ['data' => t('Weight')],
       ['data' => t('Uploaded at')],
       ['data' => t('Is active file ?')],
       ['data' => t('Operations')],
@@ -245,7 +246,8 @@ class FileHistory extends FormElement {
 
       $fileRow = [];
       $fileRow[] = ['data' => $file->name];
-      $fileRow[] = ['data' => $file->filename];
+      $fileRow[] = ['data' => $fObj->getFilename()];
+      $fileRow[] = ['data' => format_size($fObj->getSize())];
       $fileRow[] = ['data' => date('Y-m-d H:i', $fObj->getCreatedTime())];
 
       $isCurrentFile = ($fid == $currentFile);
