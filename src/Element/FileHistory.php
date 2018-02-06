@@ -203,6 +203,11 @@ class FileHistory extends FormElement {
       'selected' => '',
     ];
 
+    if ($no_use) {
+      unset($header['activ']);
+      unset($header['selected']);
+    }
+
     // Wait alterations of headers.
     \Drupal::moduleHandler()->invokeAll(
       'file_history_' . $element['#name'] . '_headers_alter',
@@ -264,9 +269,9 @@ class FileHistory extends FormElement {
       $fileRow['uploaded'] = ['#markup' => date('Y-m-d H:i', $fObj->getCreatedTime())];
 
       $isCurrentFile = (in_array($fid, $currentFiles));
-
-      $fileRow['activ'] = ['#markup' => $isCurrentFile ? t('Yes') : ''];
-
+      if (!$no_use) {
+        $fileRow['activ'] = ['#markup' => $isCurrentFile ? t('Yes') : ''];
+      }
       $current_route = \Drupal::routeMatch()->getRouteName();
       $links = [];
 
@@ -317,11 +322,12 @@ class FileHistory extends FormElement {
           '#links' => $links,
         ],
       ];
-
-      $fileRow['selected'] = [
-        '#type' => 'hidden',
-        '#value' => $isCurrentFile ? 1 : 0,
-      ];
+      if (!$no_use) {
+        $fileRow['selected'] = [
+          '#type' => 'hidden',
+          '#value' => $isCurrentFile ? 1 : 0,
+        ];
+      }
 
       $rows[$fObj->getCreatedTime()] = $fileRow;
     }
