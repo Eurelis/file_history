@@ -194,15 +194,21 @@ class FileHistory extends FormElement {
 
     // Add Table Header.
     $header = [
-      ['data' => t('Name')],
-      ['data' => t('Filename')],
-      ['data' => t('Weight')],
-      ['data' => t('Uploaded at')],
-      ['data' => t('Is active file ?')],
-      ['data' => t('Operations')],
+      'fid' => '',
+      'name' => t('Name'),
+      'filename' => t('Filename'),
+      'weight' => t('Weight'),
+      'uploaded' => t('Uploaded at'),
+      'activ' => t('Is active file ?'),
+      'operation' => t('Operations'),
+      'selected' => '',
     ];
 
-    \Drupal::moduleHandler()->invokeAll('file_history_' . $element['#name'] . '_headers_alter', [&$header]);
+    // Wait alterations of headers.
+    \Drupal::moduleHandler()->invokeAll(
+      'file_history_' . $element['#name'] . '_headers_alter',
+      [&$header, $element['#name']]
+    );
 
     $rows = [];
 
@@ -249,14 +255,18 @@ class FileHistory extends FormElement {
       $fid = $fObj->id();
       $realpath = \Drupal::service('file_system')->realpath($fObj->getFileUri());
       $fileRow = [];
-      $fileRow[] = ['data' => $file->name];
-      $fileRow[] = ['data' => $fObj->getFilename()];
-      $fileRow[] = ['data' => format_size(filesize($realpath))];
-      $fileRow[] = ['data' => date('Y-m-d H:i', $fObj->getCreatedTime())];
+      $fileRow['fid'] = [
+        '#type' => 'hidden',
+        '#value' => $fid,
+      ];
+      $fileRow['name'] = ['#markup' => $file->name];
+      $fileRow['filename'] = ['#markup' => $fObj->getFilename()];
+      $fileRow['weight'] = ['#markup' => format_size(filesize($realpath))];
+      $fileRow['uploaded'] = ['#markup' => date('Y-m-d H:i', $fObj->getCreatedTime())];
 
       $isCurrentFile = (in_array($fid, $currentFiles));
 
-      $fileRow[] = ['data' => $isCurrentFile ? t('Yes') : ''];
+      $fileRow['activ'] = ['#markup' => $isCurrentFile ? t('Yes') : ''];
 
       $current_route = \Drupal::routeMatch()->getRouteName();
       $links = [];
@@ -301,26 +311,44 @@ class FileHistory extends FormElement {
         ];
       }
 
-      $fileRow[] = [
-        'data' =>
+      $fileRow['operation'] = [
+        'item' =>
         [
           '#type' => 'dropbutton',
           '#links' => $links,
         ],
       ];
+
+      $fileRow['selected'] = [
+        '#type' => 'hidden',
+        '#value' => $isCurrentFile ? 1 : 0,
+      ];
+
       $rows[$fObj->getCreatedTime()] = $fileRow;
     }
 
     // We sort files by upload time.
     krsort($rows);
     $sorted_rows = array_values($rows);
-    \Drupal::moduleHandler()->invokeAll('file_history_' . $element['#name'] . '_rows_alter', [&$sorted_rows]);
+
+    // Wait alterations of rows.
+    \Drupal::moduleHandler()->invokeAll(
+      'file_history_' . $element['#name'] . '_rows_alter',
+      [&$sorted_rows, $element['#name']]
+    );
+
+    // Make table.
     $element['table'] = [
-      '#theme' => 'table',
+      '#type' => 'table',
       '#header' => $header,
-      '#rows' => $sorted_rows,
     ];
 
+    // Add rows.
+    foreach ($sorted_rows as $row) {
+      $element['table'][] = $row;
+    }
+
+    // Return form item.
     return $element;
   }
 
