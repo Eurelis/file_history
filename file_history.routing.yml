@@ -11,27 +11,29 @@ file_history.exemple_form:
 
 
 # Route to using a file
-file_history.use_file:
-  path: '/file_history/use/{file}/{config_name}/{destination}'
+file_history.select_file:
+  path: '/file_history/select/{file}/{config_name}/{multiple}/{destination}'
   defaults:
-    _controller: '\Drupal\file_history\Controller\FileHistoryController::useFile'
+    _controller: '\Drupal\file_history\Controller\FileHistoryController::selectFile'
     _title: 'use'
   requirements:
     _permission: 'access content'
     file: '^[0-9_]+'
+    multiple: '^[0-1]'
   options:
     parameters:
       file:
         type: entity:file
 # Route to reload a file
-file_history.reload_file:
-  path: '/file_history/reload/{file}/{config_name}/{destination}'
+file_history.unselect_file:
+  path: '/file_history/unselect/{file}/{config_name}/{multiple}/{destination}'
   defaults:
-    _controller: '\Drupal\file_history\Controller\FileHistoryController::reloadFile'
+    _controller: '\Drupal\file_history\Controller\FileHistoryController::unselectFile'
     _title: 'use'
   requirements:
     _permission: 'access content'
     file: '^[0-9_]+'
+    multiple: '^[0-1]'
   options:
     parameters:
       file:

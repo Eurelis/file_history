@@ -15,23 +15,66 @@ use Drupal\Core\Url;
 class FileHistoryController extends ControllerBase {
 
   /**
-   * Set File for Use.
+   * Select File.
    *
    * @param \Drupal\file\FileInterface $file
    *   File object.
    * @param string $config_name
    *   Config Id to load.
+   * @param int $multiple
+   *   Boolean.
    * @param string $destination
    *   Destination of return.
    *
    * @return \Symfony\Component\HttpFoundation\RedirectResponse
    *   Redirection.
    */
-  public function useFile(FileInterface $file, $config_name, $destination) {
+  public function selectFile(FileInterface $file, $config_name, $multiple, $destination) {
 
     // Set file as active.
     $config = \Drupal::service('config.factory')->getEditable('file_history.' . $config_name);
-    $config->set('activ_file', $file->id())->save();
+
+    $activ = $config->get('activ_file', []);
+
+    if ($multiple == 1) {
+      $activ[] = $file->id();
+    }
+    else {
+      $activ = [$file->id()];
+    }
+
+    $config->set('activ_file', $activ)->save();
+
+    return $this->returnToPage($destination);
+  }
+
+  /**
+   * Unselect File.
+   *
+   * @param \Drupal\file\FileInterface $file
+   *   File object.
+   * @param string $config_name
+   *   Config Id to load.
+   * @param int $multiple
+   *   Boolean.
+   * @param string $destination
+   *   Destination of return.
+   *
+   * @return \Symfony\Component\HttpFoundation\RedirectResponse
+   *   Redirection.
+   */
+  public function unselectFile(FileInterface $file, $config_name, $multiple, $destination) {
+
+    // Set file as active.
+    $config = \Drupal::service('config.factory')->getEditable('file_history.' . $config_name);
+
+    $activ = $config->get('activ_file', []);
+
+    $key = array_search($file->id(), $activ);
+    if ($key !== FALSE) {
+      unset($activ[$key]);
+      $config->set('activ_file', $activ)->save();
+    }
 
     return $this->returnToPage($destination);
   }
@@ -77,28 +120,6 @@ class FileHistoryController extends ControllerBase {
     $response->headers->set('Content-Disposition', $disposition);
 
     return $response;
-  }
-
-  /**
-   * Relaod File.
-   *
-   * @param \Drupal\file\FileInterface $file
-   *   File object.
-   * @param string $config_name
-   *   Config Id to load.
-   * @param string $destination
-   *   Destination of return.
-   *
-   * @return \Symfony\Component\HttpFoundation\RedirectResponse
-   *   Redirection.
-   */
-  public function reloadFile(FileInterface $file, $config_name, $destination) {
-
-    // Set file as active.
-    $config = \Drupal::service('config.factory')->getEditable('file_history.' . $config_name);
-    $config->set('activ_file', $file->id())->save();
-
-    return $this->returnToPage($destination);
   }
 
   /**

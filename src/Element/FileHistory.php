@@ -61,9 +61,10 @@ class FileHistory extends FormElement {
 
       $all_files = \Drupal::request()->files->get('files', []);
       $upload_name = implode('_', $element['#parents']);
+      $uploaded_file = $all_files[$upload_name];
 
       // If a file are uploaded.
-      if (!empty($all_files[$upload_name]) && file_exists($all_files[$upload_name])) {
+      if ($uploaded_file != NULL && $uploaded_file != [NULL] && file_exists($uploaded_file)) {
 
         /** @var \Symfony\Component\HttpFoundation\File\UploadedFile $file_upload */
         $file_upload = $all_files[$upload_name];
@@ -125,8 +126,8 @@ class FileHistory extends FormElement {
     // Return default selected value.
     $config_name = 'file_history.' . $element['#name'];
     $config = \Drupal::config($config_name);
-    $fid = $config->get('activ_file');
-    return ['selected_file' => $fid];
+    $fids = $config->get('activ_file');
+    return ['selected' => $fids];
   }
 
   /**
@@ -145,6 +146,7 @@ class FileHistory extends FormElement {
     $no_download = (isset($element['#no_download']) && $element['#no_download'] === TRUE);
     $no_use = (isset($element['#no_use']) && $element['#no_use'] === TRUE);
     $create_missing = (isset($element['#create_missing']) && $element['#create_missing'] === TRUE);
+    $is_multiple = (isset($element['#multiple']) && $element['#multiple'] === TRUE);
 
     // Prepare upload fields.
     // This is used sometimes so let's implode it just once.
@@ -200,11 +202,13 @@ class FileHistory extends FormElement {
       ['data' => t('Operations')],
     ];
 
+    \Drupal::moduleHandler()->invokeAll('file_history_' . $element['#name'] . '_headers_alter', [&$header]);
+
     $rows = [];
 
     // List only files with correct extensions.
     $already_load_files = file_scan_directory($element['#upload_location'], $file_extension_mask);
-    $currentFile = $config->get('activ_file');
+    $currentFiles = $config->get('activ_file');
 
     // For Each files.
     foreach ($already_load_files as $file) {
@@ -250,7 +254,7 @@ class FileHistory extends FormElement {
       $fileRow[] = ['data' => format_size(filesize($realpath))];
       $fileRow[] = ['data' => date('Y-m-d H:i', $fObj->getCreatedTime())];
 
-      $isCurrentFile = ($fid == $currentFile);
+      $isCurrentFile = (in_array($fid, $currentFiles));
 
       $fileRow[] = ['data' => $isCurrentFile ? t('Yes') : ''];
 
@@ -259,12 +263,12 @@ class FileHistory extends FormElement {
 
       if (!$no_use) {
         if ($isCurrentFile === TRUE) {
-          $link_title = t('Reload');
-          $route_target = 'use_file';
+          $link_title = t('Unselect file');
+          $route_target = 'unselect_file';
         }
         else {
-          $link_title = t('Use');
-          $route_target = 'reload_file';
+          $link_title = t('Select file');
+          $route_target = 'select_file';
         }
         $links[] = [
           'title' => $link_title ,
@@ -272,6 +276,7 @@ class FileHistory extends FormElement {
             [
               'file' => $fid,
               'config_name' => $element['#name'],
+              'multiple' => ($is_multiple) ? 1 : 0,
               'destination' => $current_route,
             ]),
         ];
@@ -308,11 +313,12 @@ class FileHistory extends FormElement {
 
     // We sort files by upload time.
     krsort($rows);
-
+    $sorted_rows = array_values($rows);
+    \Drupal::moduleHandler()->invokeAll('file_history_' . $element['#name'] . '_rows_alter', [&$sorted_rows]);
     $element['table'] = [
       '#theme' => 'table',
       '#header' => $header,
-      '#rows' => array_values($rows),
+      '#rows' => $sorted_rows,
     ];
 
     return $element;
