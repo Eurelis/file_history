@@ -243,11 +243,11 @@ class FileHistory extends FormElement {
 
       // Process File for Table.
       $fid = $fObj->id();
-
+      $realpath = \Drupal::service('file_system')->realpath($fObj->getFileUri());
       $fileRow = [];
       $fileRow[] = ['data' => $file->name];
       $fileRow[] = ['data' => $fObj->getFilename()];
-      $fileRow[] = ['data' => format_size($fObj->getSize())];
+      $fileRow[] = ['data' => format_size(filesize($realpath))];
       $fileRow[] = ['data' => date('Y-m-d H:i', $fObj->getCreatedTime())];
 
       $isCurrentFile = ($fid == $currentFile);
