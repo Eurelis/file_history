@@ -61,22 +61,21 @@ class FileHistory extends FormElement {
 
       $all_files = \Drupal::request()->files->get('files', []);
       $upload_name = implode('_', $element['#parents']);
-      $uploaded_file = $all_files[$upload_name];
+      /** @var \Symfony\Component\HttpFoundation\File\UploadedFile $uploaded_file */
+      $uploaded_file = $all_files[$upload_name][0];
 
       // If a file are uploaded.
-      if ($uploaded_file != NULL && $uploaded_file != [NULL] && file_exists($uploaded_file)) {
+      if ($uploaded_file != NULL && file_exists($uploaded_file)) {
 
-        /** @var \Symfony\Component\HttpFoundation\File\UploadedFile $file_upload */
-        $file_upload = $all_files[$upload_name];
-
+        // $uploaded_file = $all_files[$upload_name][0];
         // If isset file content validation.
         if (is_callable($element['#content_validator'], FALSE, $validation_callback)) {
 
           $file_data_for_validation = [
-            'file_original_name' => $file_upload->getClientOriginalName(),
-            'file_original_extension' => $file_upload->getClientOriginalExtension(),
-            'file_size' => $file_upload->getClientSize(),
-            'file_path' => $file_upload->getRealPath(),
+            'file_original_name' => $uploaded_file->getClientOriginalName(),
+            'file_original_extension' => $uploaded_file->getClientOriginalExtension(),
+            'file_size' => $uploaded_file->getClientSize(),
+            'file_path' => $uploaded_file->getRealPath(),
           ];
 
           $return_status = $validation_callback($file_data_for_validation);
@@ -214,7 +213,7 @@ class FileHistory extends FormElement {
 
     // List only files with correct extensions.
     $already_load_files = file_scan_directory($element['#upload_location'], $file_extension_mask);
-    $currentFiles = $config->get('activ_file');
+    $currentFiles = ($config->get('activ_file')) ? $config->get('activ_file') : [];
 
     // For Each files.
     foreach ($already_load_files as $file) {
