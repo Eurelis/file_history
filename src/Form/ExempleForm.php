@@ -30,6 +30,10 @@ class ExempleForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
+
+    $default = $this->config('exemple_file_history.default')->get('selected_configuration_file');
+
+
     $class = get_class($this);
     $validators = [
       'file_validate_extensions' => ['xls xlsx xml txt'],
@@ -51,6 +55,8 @@ class ExempleForm extends ConfigFormBase {
       ],
       // If folder contain file not knowed by Drupal, we save they.
       '#create_missing' => TRUE,
+      '#multiple' => TRUE,
+      '#default_value' => (is_array($default) ? $default : [])
     ];
     return parent::buildForm($form, $form_state);
   }
@@ -102,7 +108,7 @@ class ExempleForm extends ConfigFormBase {
 
     // Do something on submit.
     $this->config('exemple_file_history.default')
-      ->set('selected_configuration_file', $selected_file_value['selected_file'])
+      ->set('selected_configuration_file', $selected_file_value['selected'])
       ->save();
   }
 

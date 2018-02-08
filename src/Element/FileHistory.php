@@ -48,85 +48,43 @@ class FileHistory extends FormElement {
    * {@inheritdoc}
    */
   public static function valueCallback(&$element, $input, FormStateInterface $form_state) {
+
     // If no upload_location, no field.
     if ($element['#upload_location'] == NULL) {
       drupal_set_message("'#upload_location' attribute are mandatory in file_history definition.", 'error');
       return;
     }
 
+    $is_multiple = (isset($element['#multiple']) && $element['#multiple'] === TRUE);
+
     // If there is input.
     if ($input !== FALSE) {
+      // We upload files.
+      self::uploadFile($element, $input, $form_state);
+      // @TODO : Manage upload status
+    }
 
-      $block_upload = FALSE;
+    // Prepare default values.
+    $values = self::makeValues($element, $form_state);
 
-      $all_files = \Drupal::request()->files->get('files', []);
-      $upload_name = implode('_', $element['#parents']);
-      /** @var \Symfony\Component\HttpFoundation\File\UploadedFile $uploaded_file */
-      $uploaded_file = $all_files[$upload_name][0];
+    // Bind buttons.
+    $button = $form_state->getTriggeringElement();
 
-      // If a file are uploaded.
-      if ($uploaded_file != NULL && file_exists($uploaded_file)) {
+    if (strstr($button["#name"], $element['#name'])) {
 
-        // $uploaded_file = $all_files[$upload_name][0];
-        // If isset file content validation.
-        if (is_callable($element['#content_validator'], FALSE, $validation_callback)) {
+      // Manage Select/deselect.
+      if (strstr($button["#name"], 'select_file_button_')) {
+        self::manageSelected($button["#name"], $values, $is_multiple);
+      }
 
-          $file_data_for_validation = [
-            'file_original_name' => $uploaded_file->getClientOriginalName(),
-            'file_original_extension' => $uploaded_file->getClientOriginalExtension(),
-            'file_size' => $uploaded_file->getClientSize(),
-            'file_path' => $uploaded_file->getRealPath(),
-          ];
-
-          $return_status = $validation_callback($file_data_for_validation);
-
-          if (!isset($return_status['status'])) {
-            drupal_set_message("Validation callback need return at least a status 'return ['status' => Boolean]'", 'error');
-            return;
-          }
-
-          $status = 'status';
-          if ($return_status['status'] === FALSE) {
-            $block_upload = TRUE;
-            $status = 'error';
-          }
-
-          if (isset($return_status['message']) && $return_status['message'] != '') {
-            drupal_set_message($return_status['message'], $status);
-          }
-
-          // If validation failed.
-          if ($return_status['status'] === FALSE) {
-            $block_upload = TRUE;
-          }
-        }
-
-        // If validation pass, we save file.
-        if ($block_upload !== TRUE) {
-          $destination = isset($element['#upload_location']) ? $element['#upload_location'] : NULL;
-          if (!$files = file_save_upload($upload_name, $element['#upload_validators'], $destination)) {
-            \Drupal::logger('file')->notice('The file upload failed. %upload', ['%upload' => $upload_name]);
-            $form_state->setError($element, t('Files in the @name field were unable to be uploaded.', ['@name' => $element['#title']]));
-          }
-          else {
-            // Set file as permanent.
-            /** @var \Drupal\file\Entity\File $file */
-            foreach ($files as $file) {
-              if ($file != NULL && $file->isTemporary()) {
-                $file->setPermanent();
-                $file->save();
-              }
-            }
-          }
-        }
+      // Manage Delete.
+      if (strstr($button["#name"], 'delete_button_')) {
+        $values = self::deleteFile($button["#name"]);
       }
     }
 
     // Return default selected value.
-    $config_name = 'file_history.' . $element['#name'];
-    $config = \Drupal::config($config_name);
-    $fids = $config->get('activ_file');
-    return ['selected' => $fids];
+    return ['selected' => $values];
   }
 
   /**
@@ -145,7 +103,6 @@ class FileHistory extends FormElement {
     $no_download = (isset($element['#no_download']) && $element['#no_download'] === TRUE);
     $no_use = (isset($element['#no_use']) && $element['#no_use'] === TRUE);
     $create_missing = (isset($element['#create_missing']) && $element['#create_missing'] === TRUE);
-    $is_multiple = (isset($element['#multiple']) && $element['#multiple'] === TRUE);
 
     // Prepare upload fields.
     // This is used sometimes so let's implode it just once.
@@ -181,15 +138,11 @@ class FileHistory extends FormElement {
         '#type' => 'submit',
         '#value' => t('Upload'),
         '#validate' => [],
-        '#submit' => ['file_history_submit_upload'],
+        '#submit' => ['file_history_submits'],
         '#limit_validation_errors' => [],
         '#weight' => -5,
       ];
     }
-
-    // Get config for Current File.
-    $config_name = 'file_history.' . $element['#name'];
-    $config = \Drupal::config($config_name);
 
     // Add Table Header.
     $header = [
@@ -214,11 +167,14 @@ class FileHistory extends FormElement {
       [&$header, $element['#name']]
     );
 
+    // Prepare table rows.
     $rows = [];
 
     // List only files with correct extensions.
     $already_load_files = file_scan_directory($element['#upload_location'], $file_extension_mask);
-    $currentFiles = ($config->get('activ_file')) ? $config->get('activ_file') : [];
+
+    // Manage activ files.
+    $currentFiles = (is_array($element['#value']['selected'])) ? $element['#value']['selected'] : [];
 
     // For Each files.
     foreach ($already_load_files as $file) {
@@ -272,10 +228,9 @@ class FileHistory extends FormElement {
       if (!$no_use) {
         $fileRow['activ'] = ['#markup' => $isCurrentFile ? t('Yes') : ''];
       }
-      $current_route = \Drupal::routeMatch()->getRouteName();
-      $links = [];
 
       if (!$no_use) {
+        // Prepare select/unselect submit.
         if ($isCurrentFile === TRUE) {
           $link_title = t('Unselect file');
           $route_target = 'unselect_file';
@@ -284,51 +239,57 @@ class FileHistory extends FormElement {
           $link_title = t('Select file');
           $route_target = 'select_file';
         }
-        $links[] = [
-          'title' => $link_title ,
-          'url' => Url::fromRoute('file_history.' . $route_target,
-            [
-              'file' => $fid,
-              'config_name' => $element['#name'],
-              'multiple' => ($is_multiple) ? 1 : 0,
-              'destination' => $current_route,
-            ]),
+
+        // Add select/unselect submit.
+        $fileRow['operation'][] = [
+          '#name' => $element['#name'] . '_' . $route_target . '_button_' . $fid,
+          '#type' => 'submit',
+          '#value' => $link_title,
+          '#validate' => [],
+          '#submit' => ['file_history_submits'],
+          '#limit_validation_errors' => [],
+          '#weight' => -5,
         ];
       }
 
       if (!$isCurrentFile) {
-        $links[] = [
-          'title' => t('Delete'),
-          'url' => Url::fromRoute('file_history.delete_file',
-            [
-              'file' => $fid,
-              'destination' => $current_route,
-            ]),
+        // Add delete submit.
+        $fileRow['operation'][] = [
+          '#name' => $element['#name'] . '_delete_button_' . $fid,
+          '#type' => 'submit',
+          '#value' => t('Delete'),
+          '#validate' => [],
+          '#submit' => ['file_history_submits'],
+          '#limit_validation_errors' => [],
+          '#weight' => -5,
         ];
       }
 
       if (!$no_download) {
+        // Add download button.
         $url = self::makeDownloadLink($fObj);
-        $links[] = [
+        $links = [
           'title' => t('Download'),
           'url' => $url,
         ];
+        $fileRow['operation'][] = [
+          'item' =>
+            [
+              '#type' => 'dropbutton',
+              '#links' => [$links],
+            ],
+        ];
       }
 
-      $fileRow['operation'] = [
-        'item' =>
-        [
-          '#type' => 'dropbutton',
-          '#links' => $links,
-        ],
-      ];
       if (!$no_use) {
+        // Add hidden boolean value.
         $fileRow['selected'] = [
           '#type' => 'hidden',
           '#value' => $isCurrentFile ? 1 : 0,
         ];
       }
 
+      // Attach rows to table.
       $rows[$fObj->getCreatedTime()] = $fileRow;
     }
 
@@ -400,6 +361,174 @@ class FileHistory extends FormElement {
         [
           'file' => $file->id(),
         ]);
+    }
+  }
+
+  /**
+   * Upload file.
+   *
+   * @param mixed $element
+   *   Element.
+   * @param mixed $input
+   *   Input.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   FormState.
+   *
+   * @return bool
+   *   Status of upload.
+   */
+  public static function uploadFile(&$element, $input, FormStateInterface $form_state) {
+
+    $all_files = \Drupal::request()->files->get('files', []);
+    $upload_name = $element['#name'];
+    /** @var \Symfony\Component\HttpFoundation\File\UploadedFile $uploaded_file */
+    $uploaded_file = $all_files[$upload_name];
+
+    if (is_array($uploaded_file)) {
+      $uploaded_file = $uploaded_file[0];
+    }
+
+    // If a file are uploaded.
+    if ($uploaded_file != NULL && file_exists($uploaded_file)) {
+
+      // $uploaded_file = $all_files[$upload_name][0];
+      // If isset file content validation.
+      if (is_callable($element['#content_validator'], FALSE, $validation_callback)) {
+
+        $file_data_for_validation = [
+          'file_original_name' => $uploaded_file->getClientOriginalName(),
+          'file_original_extension' => $uploaded_file->getClientOriginalExtension(),
+          'file_size' => $uploaded_file->getClientSize(),
+          'file_path' => $uploaded_file->getRealPath(),
+        ];
+
+        $return_status = $validation_callback($file_data_for_validation);
+
+        if (!isset($return_status['status'])) {
+          drupal_set_message("Validation callback need return at least a status 'return ['status' => Boolean]'", 'error');
+          return FALSE;
+        }
+
+        $status = 'status';
+        if ($return_status['status'] === FALSE) {
+          $status = 'error';
+        }
+
+        if (isset($return_status['message']) && $return_status['message'] != '') {
+          drupal_set_message($return_status['message'], $status);
+        }
+
+        // If validation failed.
+        if ($return_status['status'] === FALSE) {
+          return FALSE;
+        }
+      }
+
+      // If validation pass, we save file.
+      $destination = isset($element['#upload_location']) ? $element['#upload_location'] : NULL;
+
+      file_prepare_directory($destination, FILE_CREATE_DIRECTORY);
+
+      if (!$files = file_save_upload($upload_name, $element['#upload_validators'], $destination)) {
+        \Drupal::logger('file')->notice('The file upload failed. %upload', ['%upload' => $upload_name]);
+        $form_state->setError($element, t('Files in the @name field were unable to be uploaded.', ['@name' => $element['#title']]));
+        return FALSE;
+      }
+      else {
+        // Set file as permanent.
+        /** @var \Drupal\file\Entity\File $file */
+        foreach ($files as $file) {
+          if ($file != NULL && $file->isTemporary()) {
+            $file->setPermanent();
+            $file->save();
+          }
+        }
+      }
+    }
+    return TRUE;
+  }
+
+  /**
+   * Extract values of field.
+   *
+   * @param mixed $element
+   *   Element.
+   * @param \Drupal\Core\Form\FormStateInterface $form_state
+   *   Form state.
+   *
+   * @return array
+   *   List of selected Fids.
+   */
+  public static function makeValues($element, FormStateInterface $form_state) {
+
+    $input = $form_state->getUserInput();
+    $values = [];
+    if (isset($input[$element['#name']]['table'])) {
+      $table_data = $input[$element['#name']]['table'];
+
+      foreach ($table_data as $row_id => $data) {
+        if (isset($data['selected']) && $data['selected'] == 1) {
+          $values[] = $data['fid'];
+        }
+      }
+    }
+    else {
+      if (isset($element["#default_value"])) {
+        $values = $element["#default_value"];
+      }
+      else {
+        $values = [];
+      }
+    }
+    return $values;
+  }
+
+  /**
+   * Manage select/unselect files.
+   *
+   * @param string $button_name
+   *   Name of clicked button.
+   * @param array $values
+   *   Default list of Fids.
+   * @param bool $is_multiple
+   *   Boolean.
+   */
+  public static function manageSelected($button_name, array &$values, $is_multiple = FALSE) {
+
+    if (strstr($button_name, '_unselect_file_button_')) {
+      list($element_name, $fid) = explode('_unselect_file_button_', $button_name);
+
+      foreach ($values as $key => $value) {
+        if ($value == $fid) {
+          unset($values[$key]);
+        }
+      }
+    }
+    if (strstr($button_name, '_select_file_button_')) {
+      list($element_name, $fid) = explode('_select_file_button_', $button_name);
+      if ($is_multiple == TRUE) {
+        $values[] = $fid;
+      }
+      else {
+        $values = [$fid];
+      }
+
+    }
+  }
+
+  /**
+   * Delete file action.
+   *
+   * @param string $button_name
+   *   Name of button.
+   */
+  public static function deleteFile($button_name) {
+
+    if (strstr($button_name, '_delete_button_')) {
+      list($element_name, $fid) = explode('_delete_button_', $button_name);
+
+      $file = File::load($fid);
+      $file->delete();
     }
   }
 

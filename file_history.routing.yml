@@ -10,52 +10,12 @@ file_history.exemple_form:
     _admin_route: TRUE
 
 
-# Route to using a file
-file_history.select_file:
-  path: '/file_history/select/{file}/{config_name}/{multiple}/{destination}'
-  defaults:
-    _controller: '\Drupal\file_history\Controller\FileHistoryController::selectFile'
-    _title: 'use'
-  requirements:
-    _permission: 'access content'
-    file: '^[0-9_]+'
-    multiple: '^[0-1]'
-  options:
-    parameters:
-      file:
-        type: entity:file
-# Route to reload a file
-file_history.unselect_file:
-  path: '/file_history/unselect/{file}/{config_name}/{multiple}/{destination}'
-  defaults:
-    _controller: '\Drupal\file_history\Controller\FileHistoryController::unselectFile'
-    _title: 'use'
-  requirements:
-    _permission: 'access content'
-    file: '^[0-9_]+'
-    multiple: '^[0-1]'
-  options:
-    parameters:
-      file:
-        type: entity:file
-# Route to delete a file
-file_history.delete_file:
-  path: '/file_history/delete/{file}/{destination}'
-  defaults:
-    _controller: '\Drupal\file_history\Controller\FileHistoryController::deleteFile'
-    _title: 'delete'
-  requirements:
-    _permission: 'access content'
-    file: '^[0-9_]+'
-  options:
-    parameters:
-      file:
-        type: entity:file
+
 # Route to download a file
 file_history.download_nonpublic_file:
   path: '/file_history/download/{file}'
   defaults:
-    _controller: '\Drupal\file_history\Controller\FileHistoryController::downloadLogFile'
+    _controller: '\Drupal\file_history\Controller\FileHistoryController::downloadFile'
     _title: 'download'
   requirements:
     _permission: 'access content'

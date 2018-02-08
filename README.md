@@ -33,6 +33,11 @@ $form['configurations_files'] = [
         // Folder to store files.
         '#upload_location' => 'public://my_configuration/',
         
+        // Default Values : list of Fids
+        '#default_values' => $fids,
+        // Table authorise multiple selection ?
+        '#multiple' => FALSE
+        
         // If you need validation content of files before store it.
         '#content_validator' => [
             $class, 'myContentValidator',
@@ -139,7 +144,6 @@ On the form submit action, the field value is a array with state of the two
 ## 5. Further developments
 
 - Cleaning code originaly from managed_file
-- Add a real action to "reload" callback
-- Replace link action by submit buttons & correctly manage default_value
+- Replace donwload action by submit button
 - Correct issues...
 - Something else ?
