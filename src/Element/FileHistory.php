@@ -79,7 +79,7 @@ class FileHistory extends FormElement {
 
       // Manage Delete.
       if (strstr($button["#name"], 'delete_button_')) {
-        $values = self::deleteFile($button["#name"]);
+        self::deleteFile($button["#name"]);
       }
     }
 
