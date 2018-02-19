@@ -144,6 +144,5 @@ On the form submit action, the field value is a array with state of the two
 ## 5. Further developments
 
 - Cleaning code originaly from managed_file
-- Replace donwload action by submit button
 - Correct issues...
 - Something else ?
