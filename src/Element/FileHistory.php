@@ -384,7 +384,7 @@ class FileHistory extends FormElement {
     /** @var \Symfony\Component\HttpFoundation\File\UploadedFile $uploaded_file */
     $uploaded_file = $all_files[$upload_name];
 
-    if (is_array($uploaded_file) && count($uploaded_file) > 0) {
+    if (is_array($uploaded_file) && isset($uploaded_file['0'])) {
       $uploaded_file = $uploaded_file[0];
     }
 
